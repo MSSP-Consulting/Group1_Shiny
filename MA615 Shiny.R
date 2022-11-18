@@ -1,3 +1,5 @@
+
+data <- read.csv("Boston Employee Earnings Report In 2021.csv")
 library(shiny)
 
 ui <- fluidPage(
