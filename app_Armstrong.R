@@ -1,4 +1,3 @@
-devtools::install_github("rtelmore/RDSTK")
 library(shiny)
 library(tidyverse)
 library(tigris)
@@ -10,41 +9,33 @@ library(ggplot2)
 library(stringr)
 library(rgdal) 
 library(maptools) 
-library(RDSTK)
+library(leaflet)
+library(tidygeocoder)
+library(tibble)
 
 raw_data <- read.csv("fy2022pa-4.csv")
+#############################
+raw_data <- na.omit(raw_data)
+###############################
 df<-raw_data%>%
   mutate(ZIPCODE = str_pad(ZIPCODE, 5, side = "left", "0"))%>%
-  select(ZIPCODE,CITY,OVERALL_COND,TOTAL_VALUE,LAND_SF,MAIL_ADDRESS)
+  select(ZIPCODE,CITY,OVERALL_COND,TOTAL_VALUE,LAND_SF,MAIL_ADDRESS) 
+
 lat<-c()
 lng<-c()
-for(i in 1:length(df$ZIPCODE)){
-  lat<-append(lat,geocode_zip(df$ZIPCODE)[2])
-  lng<-append(lng,geocode_zip(df$ZIPCODE)[3])
+for(i in 1:length(df$MAIL_ADDRESS)){
+  address_single<-tibble(singlelineaddress=c(paste(df$MAIL_ADDRESS[i],df$CITY[i],"MA")))
+  census<-address_single%>%geocode(address = singlelineaddress,method="census",verbose=TRUE)
+  lat<-append(lat,census$lat)
+  lng<-append(lng,census$long)
 }
 df$lat<-lat
 df$lng<-lng
-
-street2coordinates(df$MAIL_ADDRESS)$longitude
-
-unique(clean$ZIPCODE)
-lat <- geocode_zip(clean$ZIPCODE)$lat
-lng <- geocode_zip(clean$ZIPCODE)$lng
-
-
-city <- c("EAST BOSTON","BOSTON","CHARLESTOWN","ROXBURY",
-          "SOUTH BOSTON","ROXBURY CROSSIN","DORCHESTER",
-          "JAMAICA PLAIN","ROSLINDALE","MATTAPAN",
-          "HYDE PARK","READVILLE","BRIGHTON","WEST ROXBURY",
-          "CHESTNUT HILL","DEDHAM","ALLSTON","BROOKLINE","NEWTON")
-condition <- c("Average","Good","Fair","Poor","Excellent")
-
-
-roads <- roads("MA","Suffolk")
-
-ggplot(roads) +
-  geom_sf() +
-  theme_void()
+################
+df <- na.omit(df)
+#################
+city <- unique(df$CITY)
+condition <- unique(df$OVERALL_COND)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -55,14 +46,26 @@ ui <- fluidPage(
   selectInput("City","which City are you interest in?",city),
   checkboxGroupInput("condition","what condition are you looking for",condition),
   
-  
+  mainPanel(
+    plotOutput("map"),
+    tableOutput("table")
+  )
 )
 
 
-# Define server logic required to draw a histogram
 server <- function(input, output) {
-  
+  newdf <- reactive({
+    req(input$condition)
+    df[df$conditon %in% input$condition, ]
+  })
+ output$map <- renderLeaflet({
+   leaflet() %>% 
+     addTiles() %>%
+     addMarkers(lat = newdf$lat, lng = newdf$lng,
+                popup="Boston, my hometown")
+ })
+ output$table <- renderDataTable(newdf$TOTAL_VALUE,LAND_SF,MAIL_ADDRESS)
+   
 }
 
-# Run the application 
 shinyApp(ui = ui, server = server)
