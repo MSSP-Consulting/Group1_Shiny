@@ -1,3 +1,4 @@
+devtools::install_github("rtelmore/RDSTK")
 library(shiny)
 library(tidyverse)
 library(tigris)
@@ -9,15 +10,27 @@ library(ggplot2)
 library(stringr)
 library(rgdal) 
 library(maptools) 
+library(RDSTK)
 
-# df <- read.csv("fy2022pa-4.csv") %>%
-#   mutate(ZIPCODE = str_pad(ZIPCODE, 5, side = "left", "0")) %>%
-#   mutate(lat = geocode_zip(df$ZIPCODE)$lat) %>%
-#   mutate(lng = geocode_zip(df$ZIPCODE)$lng)
-# 
-# lat <- geocode_zip(df$ZIPCODE)$lat
-# lng <- geocode_zip(df$ZIPCODE)$lng
-# final_df <- cbind(df,lat,lng)
+raw_data <- read.csv("fy2022pa-4.csv")
+df<-raw_data%>%
+  mutate(ZIPCODE = str_pad(ZIPCODE, 5, side = "left", "0"))%>%
+  select(ZIPCODE,CITY,OVERALL_COND,TOTAL_VALUE,LAND_SF,MAIL_ADDRESS)
+lat<-c()
+lng<-c()
+for(i in 1:length(df$ZIPCODE)){
+  lat<-append(lat,geocode_zip(df$ZIPCODE)[2])
+  lng<-append(lng,geocode_zip(df$ZIPCODE)[3])
+}
+df$lat<-lat
+df$lng<-lng
+
+street2coordinates(df$MAIL_ADDRESS)$longitude
+
+unique(clean$ZIPCODE)
+lat <- geocode_zip(clean$ZIPCODE)$lat
+lng <- geocode_zip(clean$ZIPCODE)$lng
+
 
 city <- c("EAST BOSTON","BOSTON","CHARLESTOWN","ROXBURY",
           "SOUTH BOSTON","ROXBURY CROSSIN","DORCHESTER",
@@ -26,13 +39,13 @@ city <- c("EAST BOSTON","BOSTON","CHARLESTOWN","ROXBURY",
           "CHESTNUT HILL","DEDHAM","ALLSTON","BROOKLINE","NEWTON")
 condition <- c("Average","Good","Fair","Poor","Excellent")
 
-#######################################
-# roads <- roads("MA","Suffolk")
-# 
-# ggplot(roads) + 
-#   geom_sf() + 
-#   theme_void()
-##################################
+
+roads <- roads("MA","Suffolk")
+
+ggplot(roads) +
+  geom_sf() +
+  theme_void()
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
