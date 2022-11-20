@@ -28,7 +28,7 @@ ui <- fluidPage(
   checkboxGroupInput("condition","what condition are you looking for",condition),
   
   mainPanel(
-    plotOutput("map"),
+    leafletOutput("map"),
     tableOutput("table")
   )
 )
@@ -42,8 +42,8 @@ server <- function(input, output) {
  output$map <- renderLeaflet({
    leaflet() %>%
      addTiles() %>%
-     addMarkers(lat = 42, lng = -72,
-                popup="Boston, my hometown")
+     addMarkers(lat = newdf()$lat, lng = newdf()$lng,
+                popup= newdf()$TOTAL_VALUE)
  })
  output$table <- renderTable(newdf()$lat)
    
