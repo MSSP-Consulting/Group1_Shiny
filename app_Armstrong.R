@@ -45,7 +45,7 @@ server <- function(input, output) {
      addMarkers(lat = 42, lng = -72,
                 popup="Boston, my hometown")
  })
- output$table <- renderTable(newdf())
+ output$table <- renderTable(newdf()$lat)
    
 }
 
