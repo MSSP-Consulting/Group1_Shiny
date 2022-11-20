@@ -13,30 +13,11 @@ library(leaflet)
 library(tidygeocoder)
 library(tibble)
 
-raw_data <- read.csv("fy2022pa-4.csv")
-#############################
-raw_data <- na.omit(raw_data)
-###############################
-df<-raw_data%>%
-  mutate(ZIPCODE = str_pad(ZIPCODE, 5, side = "left", "0"))%>%
-  select(ZIPCODE,CITY,OVERALL_COND,TOTAL_VALUE,LAND_SF,MAIL_ADDRESS) 
+df<-read.csv("clean.csv")
 
-lat<-c()
-lng<-c()
-for(i in 1:length(df$MAIL_ADDRESS)){
-  address_single<-tibble(singlelineaddress=c(paste(df$MAIL_ADDRESS[i],df$CITY[i],"MA")))
-  census<-address_single%>%geocode(address = singlelineaddress,method="census",verbose=TRUE)
-  lat<-append(lat,census$lat)
-  lng<-append(lng,census$long)
-}
-df$lat<-lat
-df$lng<-lng
-################
-df <- na.omit(df)
-#################
-city <- unique(df$CITY)
-condition <- unique(df$OVERALL_COND)
 
+city<-unique(df$CITY)
+condition<-unique(df$OVERALL_CON)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
@@ -55,16 +36,16 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   newdf <- reactive({
-    req(input$condition)
-    df[df$conditon %in% input$condition, ]
+    req(input$condition, input$City)
+    df%>%filter(OVERALL_COND%in%input$condition)%>%filter(CITY==input$City)
   })
  output$map <- renderLeaflet({
-   leaflet() %>% 
+   leaflet() %>%
      addTiles() %>%
-     addMarkers(lat = newdf$lat, lng = newdf$lng,
+     addMarkers(lat = 42, lng = -72,
                 popup="Boston, my hometown")
  })
- output$table <- renderDataTable(newdf$TOTAL_VALUE,newdf$LAND_SF,newdf$MAIL_ADDRESS)
+ output$table <- renderTable(newdf())
    
 }
 
